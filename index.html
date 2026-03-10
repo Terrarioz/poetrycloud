@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>诗云 · Poetry Cloud</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Noto+Serif+SC:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold: #c9a84c;
+    --pale-gold: #e8d5a0;
+    --ink: #1a1a2e;
+  }
+
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+
+  /* ========== INTRO SCREEN ========== */
+  #intro {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: #fff;
+    animation: introBgShift 6s ease-in-out infinite alternate;
+  }
+
+  @keyframes introBgShift {
+    0%   { background: linear-gradient(135deg, #f9f6f0, #e8dfd0, #f5f0e8); }
+    25%  { background: linear-gradient(200deg, #ede8f5, #f0e8f0, #e8f0f5); }
+    50%  { background: linear-gradient(300deg, #f5ede0, #faf0e8, #f0e8e0); }
+    75%  { background: linear-gradient(60deg,  #e8f5f0, #f0f5e8, #e8ede8); }
+    100% { background: linear-gradient(135deg, #f5e8f0, #ede8f5, #f0f0e8); }
+  }
+
+  .intro-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(3.5rem, 10vw, 8rem);
+    font-weight: 300;
+    letter-spacing: 0.15em;
+    color: transparent;
+    background: linear-gradient(135deg, #8b7355, #c9a84c, #6b5a3e, #a08040);
+    -webkit-background-clip: text;
+    background-clip: text;
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+    animation: revealTitle 2.5s cubic-bezier(0.22, 1, 0.36, 1) 0.5s forwards;
+    text-align: center;
+    line-height: 1.1;
+  }
+
+  .intro-sub {
+    font-family: 'Noto Serif SC', serif;
+    font-size: clamp(1rem, 3vw, 1.6rem);
+    font-weight: 200;
+    letter-spacing: 0.8em;
+    color: #7a6545;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: revealTitle 2s cubic-bezier(0.22, 1, 0.36, 1) 1.2s forwards;
+    margin-top: 0.4em;
+    text-align: center;
+  }
+
+  @keyframes revealTitle {
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .intro-line {
+    width: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, #c9a84c, transparent);
+    margin: 2rem auto;
+    animation: expandLine 1.5s ease-out 2s forwards;
+  }
+
+  @keyframes expandLine {
+    to { width: min(400px, 80vw); }
+  }
+
+  #enter-btn {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    font-weight: 300;
+    letter-spacing: 0.4em;
+    color: #8b7355;
+    background: transparent;
+    border: 1px solid rgba(180, 150, 80, 0.5);
+    padding: 0.8em 2.5em;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(15px);
+    animation: revealBtn 1.5s ease-out 3.2s forwards;
+    transition: all 0.4s ease;
+    text-transform: uppercase;
+  }
+
+  #enter-btn:hover {
+    background: rgba(180, 150, 80, 0.1);
+    border-color: #c9a84c;
+    color: #c9a84c;
+    letter-spacing: 0.6em;
+  }
+
+  @keyframes revealBtn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ========== MAIN APP ========== */
+  #app {
+    position: fixed; inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 1.5s ease;
+  }
+
+  #app.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* Space sky */
+  #sky {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 30%, rgba(30, 10, 60, 0.9) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 70%, rgba(10, 30, 60, 0.8) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 50%, rgba(5, 5, 20, 1) 0%, #0a0a1a 100%);
+    overflow: hidden;
+  }
+
+  /* Stars */
+  .star-layer {
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.9) 0%, transparent 100%),
+      radial-gradient(1px 1px at 25% 40%, rgba(255,255,255,0.7) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 40% 5%, rgba(255,255,255,0.8) 0%, transparent 100%),
+      radial-gradient(1px 1px at 55% 25%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 70% 60%, rgba(255,255,255,0.9) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 85% 10%, rgba(255,255,255,0.7) 0%, transparent 100%),
+      radial-gradient(1px 1px at 15% 70%, rgba(255,255,255,0.8) 0%, transparent 100%),
+      radial-gradient(1px 1px at 30% 85%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 60% 80%, rgba(255,255,255,0.7) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 90% 45%, rgba(200,220,255,0.8) 0%, transparent 100%),
+      radial-gradient(1px 1px at 5% 50%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 45% 65%, rgba(255,255,255,0.9) 0%, transparent 100%),
+      radial-gradient(1px 1px at 75% 30%, rgba(200,200,255,0.7) 0%, transparent 100%),
+      radial-gradient(1px 1px at 20% 90%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 95% 75%, rgba(255,255,255,0.8) 0%, transparent 100%),
+      radial-gradient(1px 1px at 35% 20%, rgba(255,240,200,0.7) 0%, transparent 100%),
+      radial-gradient(1px 1px at 65% 45%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 80% 90%, rgba(255,255,255,0.8) 0%, transparent 100%),
+      radial-gradient(1px 1px at 50% 50%, rgba(200,220,255,0.6) 0%, transparent 100%),
+      radial-gradient(2px 2px at 3% 3%, rgba(255,250,220,0.9) 0%, transparent 100%);
+    animation: twinkle 8s ease-in-out infinite alternate;
+  }
+
+  .star-layer:nth-child(2) {
+    animation-delay: -3s;
+    animation-duration: 11s;
+    opacity: 0.7;
+    transform: rotate(30deg) scale(1.2);
+  }
+
+  .star-layer:nth-child(3) {
+    animation-delay: -6s;
+    animation-duration: 14s;
+    opacity: 0.5;
+    transform: rotate(-20deg) scale(1.5);
+  }
+
+  @keyframes twinkle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  /* Nebula glow */
+  .nebula {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    animation: nebulaDrift 20s ease-in-out infinite alternate;
+  }
+
+  .nebula-1 { width: 500px; height: 300px; left: -100px; top: 20%; background: radial-gradient(ellipse, rgba(80,20,120,0.3), transparent); }
+  .nebula-2 { width: 400px; height: 400px; right: -50px; top: 10%; background: radial-gradient(ellipse, rgba(20,60,120,0.25), transparent); animation-delay: -7s; }
+  .nebula-3 { width: 600px; height: 200px; left: 30%; bottom: 15%; background: radial-gradient(ellipse, rgba(0,80,100,0.2), transparent); animation-delay: -12s; }
+
+  @keyframes nebulaDrift {
+    0%   { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(30px, 20px) scale(1.1); }
+  }
+
+  /* ========== CLOUD CANVAS ========== */
+  #cloud-canvas {
+    position: absolute; inset: 0;
+    pointer-events: none;
+  }
+
+  /* ========== UI PANEL ========== */
+  #ui {
+    position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 1rem;
+    z-index: 10;
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  #ui.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(20px);
+  }
+
+  .panel {
+    background: rgba(10, 8, 20, 0.75);
+    border: 1px solid rgba(180, 150, 80, 0.25);
+    backdrop-filter: blur(12px);
+    border-radius: 2px;
+    padding: 1.5rem 2rem;
+    width: min(480px, 90vw);
+  }
+
+  .panel-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.4em;
+    color: rgba(180,150,80,0.7);
+    text-align: center;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+  }
+
+  #poem-input {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 2px;
+    color: rgba(220, 210, 190, 0.9);
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.95rem;
+    font-weight: 300;
+    line-height: 1.7;
+    padding: 0.8rem 1rem;
+    resize: none;
+    height: 80px;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+
+  #poem-input::placeholder { color: rgba(150,140,120,0.4); }
+  #poem-input:focus { border-color: rgba(180,150,80,0.4); }
+
+  .char-count {
+    font-size: 0.7rem;
+    color: rgba(150,140,120,0.5);
+    text-align: right;
+    margin-top: 0.3rem;
+    font-family: 'Cormorant Garamond', serif;
+    letter-spacing: 0.05em;
+  }
+
+  .char-count.warn { color: rgba(220,120,80,0.7); }
+
+  .btn-row {
+    display: flex; gap: 0.8rem; margin-top: 1rem; align-items: center;
+  }
+
+  .btn-create {
+    flex: 1;
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.3em;
+    color: #c9a84c;
+    background: transparent;
+    border: 1px solid rgba(180,150,80,0.5);
+    padding: 0.65em 1.5em;
+    cursor: pointer;
+    transition: all 0.3s;
+    border-radius: 2px;
+  }
+
+  .btn-create:hover { background: rgba(180,150,80,0.12); border-color: #c9a84c; }
+  .btn-create:active { transform: scale(0.98); }
+
+  .btn-hide {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    color: rgba(150,140,120,0.6);
+    background: transparent;
+    border: 1px solid rgba(150,140,120,0.2);
+    padding: 0.65em 1.2em;
+    cursor: pointer;
+    transition: all 0.3s;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  .btn-hide:hover { color: rgba(200,180,140,0.8); border-color: rgba(150,140,120,0.4); }
+
+  /* Show button (after hide) */
+  #show-btn {
+    position: fixed; bottom: 1.5rem; right: 1.5rem;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    color: rgba(150,140,120,0.4);
+    background: transparent;
+    border: 1px solid rgba(150,140,120,0.15);
+    padding: 0.5em 1em;
+    cursor: pointer;
+    transition: all 0.5s;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 20;
+    border-radius: 2px;
+  }
+
+  #show-btn.visible { opacity: 1; pointer-events: all; }
+  #show-btn:hover { color: rgba(180,160,120,0.8); border-color: rgba(150,140,120,0.4); }
+
+  /* ========== POEM CLOUDS ========== */
+  .poem-cloud {
+    position: absolute;
+    pointer-events: none;
+    user-select: none;
+    white-space: pre-wrap;
+    word-break: break-all;
+    text-align: center;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    animation: cloudDrift linear forwards;
+  }
+
+  @keyframes cloudDrift {
+    0% { transform: translateX(0) translateY(0); opacity: 0; }
+    5% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* ========== FADE OVERLAY ========== */
+  #fade-overlay {
+    position: fixed; inset: 0; z-index: 99;
+    background: #fff;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1.5s ease;
+  }
+
+  #fade-overlay.active { opacity: 1; }
+
+  /* Subtle scan lines on app */
+  #app::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+</style>
+</head>
+<body>
+
+<!-- Fade overlay for transition -->
+<div id="fade-overlay"></div>
+
+<!-- INTRO -->
+<div id="intro">
+  <div class="intro-title">Poetry Cloud</div>
+  <div class="intro-sub">诗　云</div>
+  <div class="intro-line"></div>
+  <button id="enter-btn" onclick="enterApp()">E N T E R</button>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div id="sky">
+    <div class="star-layer"></div>
+    <div class="star-layer"></div>
+    <div class="star-layer"></div>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+  </div>
+
+  <canvas id="cloud-canvas"></canvas>
+
+  <div id="ui">
+    <div class="panel">
+      <div class="panel-title">创　作　诗　云</div>
+      <textarea id="poem-input" maxlength="60" placeholder="在此输入你的诗句…" oninput="updateCount()"></textarea>
+      <div class="char-count" id="char-count">0 / 60</div>
+      <div class="btn-row">
+        <button class="btn-create" onclick="createCloud()">✦ 放　云</button>
+        <button class="btn-hide" onclick="hideUI()">隐　藏</button>
+      </div>
+    </div>
+  </div>
+
+  <button id="show-btn" onclick="showUI()">诗云</button>
+</div>
+
+<script>
+// ===== ENTER TRANSITION =====
+function enterApp() {
+  const overlay = document.getElementById('fade-overlay');
+  overlay.classList.add('active');
+  setTimeout(() => {
+    document.getElementById('intro').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+    overlay.style.transition = 'opacity 2s ease';
+    overlay.classList.remove('active');
+    initCanvas();
+  }, 1500);
+}
+
+// ===== CHAR COUNT =====
+function updateCount() {
+  const inp = document.getElementById('poem-input');
+  const cc = document.getElementById('char-count');
+  const len = inp.value.length;
+  cc.textContent = `${len} / 60`;
+  cc.classList.toggle('warn', len > 50);
+}
+
+// ===== HIDE / SHOW UI =====
+function hideUI() {
+  document.getElementById('ui').classList.add('hidden');
+  const sb = document.getElementById('show-btn');
+  sb.classList.add('visible');
+}
+
+function showUI() {
+  document.getElementById('ui').classList.remove('hidden');
+  document.getElementById('show-btn').classList.remove('visible');
+}
+
+// ===== STORAGE =====
+const STORAGE_KEY = 'poetrycloud_poems';
+function loadPoems() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch { return []; }
+}
+function savePoem(text) {
+  const poems = loadPoems();
+  if (!poems.includes(text)) poems.push(text);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(poems));
+}
+
+// ===== CLOUD ENGINE =====
+const clouds = [];
+const pendingQueue = [];
+const LANES = 12;
+const laneY = [];
+let canvasW, canvasH;
+let animFrameId = null;
+
+function initCanvas() {
+  const canvas = document.getElementById('cloud-canvas');
+  canvasW = canvas.width = window.innerWidth;
+  canvasH = canvas.height = window.innerHeight;
+  calcLanes();
+  window.addEventListener('resize', () => {
+    canvasW = canvas.width = window.innerWidth;
+    canvasH = canvas.height = window.innerHeight;
+    calcLanes();
+  });
+  // Restore saved poems with staggered entry
+  const saved = loadPoems();
+  saved.forEach((text, i) => {
+    setTimeout(() => spawnCloud(text), i * 1800 + 400);
+  });
+  if (!animFrameId) animFrameId = requestAnimationFrame(animateClouds);
+}
+
+function calcLanes() {
+  for (let i = 0; i < LANES; i++) {
+    laneY[i] = (canvasH / (LANES + 1)) * (i + 1);
+  }
+}
+
+// Find a free lane
+function getFreeLane() {
+  const activeLanes = new Set(clouds.map(c => c.lane));
+  const free = [];
+  for (let i = 0; i < LANES; i++) {
+    if (!activeLanes.has(i)) free.push(i);
+  }
+  if (free.length === 0) {
+    let best = -1, bestX = Infinity;
+    for (const c of clouds) { if (c.x < bestX) { bestX = c.x; best = c.lane; } }
+    return best;
+  }
+  return free[Math.floor(Math.random() * free.length)];
+}
+
+function spawnCloud(text) {
+  const len = text.length;
+  const fontSize = Math.max(14, Math.min(22, 13 + len * 0.18));
+  const cloudW = Math.max(220, fontSize * len * 0.72 + 80);
+  const cloudH = fontSize * 3.2 + 30;
+  const lane = getFreeLane();
+  clouds.push({
+    text, cloudW, cloudH, fontSize,
+    speed: 0.35 + Math.random() * 0.25,
+    lane,
+    x: canvasW + cloudW / 2 + 20,
+    y: laneY[lane],
+    opacity: 0,
+    done: false,
+  });
+}
+
+function createCloud() {
+  const inp = document.getElementById('poem-input');
+  const text = inp.value.trim();
+  if (!text) return;
+  savePoem(text);
+  spawnCloud(text);
+  inp.value = '';
+  updateCount();
+  if (!animFrameId) animFrameId = requestAnimationFrame(animateClouds);
+}
+
+function animateClouds() {
+  const canvas = document.getElementById('cloud-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvasW, canvasH);
+  const now = performance.now();
+
+  // Spawn queued clouds
+  for (let i = pendingQueue.length - 1; i >= 0; i--) {
+    if (now >= pendingQueue[i].at) {
+      spawnCloud(pendingQueue[i].text);
+      pendingQueue.splice(i, 1);
+    }
+  }
+
+  for (const c of clouds) {
+    if (c.done) continue;
+    c.x -= c.speed;
+    if (c.x < canvasW - 20 && c.opacity < 1) c.opacity = Math.min(1, c.opacity + 0.018);
+    if (c.x < -c.cloudW / 2 - 20) {
+      c.opacity = Math.max(0, c.opacity - 0.02);
+      if (c.opacity <= 0) {
+        c.done = true;
+        // Re-queue with 4–12s delay
+        pendingQueue.push({ text: c.text, at: performance.now() + 4000 + Math.random() * 8000 });
+      }
+    }
+    if (!c.done) drawCloud(ctx, c);
+  }
+
+  for (let i = clouds.length - 1; i >= 0; i--) {
+    if (clouds[i].done) clouds.splice(i, 1);
+  }
+
+  animFrameId = requestAnimationFrame(animateClouds);
+}
+
+function drawCloud(ctx, c) {
+  ctx.save();
+  ctx.globalAlpha = c.opacity;
+
+  const cx = c.x, cy = c.y;
+  const w = c.cloudW, h = c.cloudH;
+
+  // --- Outer atmospheric glow (wide, very soft) ---
+  const outerGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, w * 0.72);
+  outerGlow.addColorStop(0,   'rgba(255,255,255,0.07)');
+  outerGlow.addColorStop(0.5, 'rgba(230,240,255,0.04)');
+  outerGlow.addColorStop(1,   'transparent');
+  ctx.fillStyle = outerGlow;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, w * 0.72, h * 1.8, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // --- Misty fog layers (multiple ellipses, blurred) ---
+  // Use shadow blur to simulate fog softness
+  const fogLayers = [
+    { rx: w * 0.52, ry: h * 0.55, alpha: 0.13, blur: 28 },
+    { rx: w * 0.48, ry: h * 0.45, alpha: 0.18, blur: 18 },
+    { rx: w * 0.44, ry: h * 0.38, alpha: 0.22, blur: 12 },
+    { rx: w * 0.40, ry: h * 0.30, alpha: 0.30, blur: 6  },
+    { rx: w * 0.36, ry: h * 0.22, alpha: 0.38, blur: 3  },
+  ];
+
+  for (const fl of fogLayers) {
+    ctx.save();
+    ctx.shadowColor = 'rgba(255,255,255,1)';
+    ctx.shadowBlur = fl.blur;
+    // Use a horizontal gradient for the ellipse to give misty edges
+    const g = ctx.createLinearGradient(cx - fl.rx, cy, cx + fl.rx, cy);
+    g.addColorStop(0,   'transparent');
+    g.addColorStop(0.12, `rgba(255,255,255,${fl.alpha * 0.5})`);
+    g.addColorStop(0.35, `rgba(255,255,255,${fl.alpha})`);
+    g.addColorStop(0.5,  `rgba(255,255,255,${fl.alpha * 1.15})`);
+    g.addColorStop(0.65, `rgba(255,255,255,${fl.alpha})`);
+    g.addColorStop(0.88, `rgba(255,255,255,${fl.alpha * 0.5})`);
+    g.addColorStop(1,   'transparent');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, fl.rx, fl.ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // --- Wispy puff bumps along the top edge ---
+  const numPuffs = Math.floor(w / 38);
+  for (let i = 0; i < numPuffs; i++) {
+    const px = cx - w * 0.38 + (w * 0.76 / (numPuffs - 1 || 1)) * i;
+    const pr = (h * 0.22) + Math.sin(i * 2.3) * h * 0.06;
+    const py = cy - h * 0.18 - pr * 0.3;
+    ctx.save();
+    ctx.shadowColor = 'rgba(255,255,255,0.9)';
+    ctx.shadowBlur = 14;
+    const pg = ctx.createRadialGradient(px, py, 0, px, py, pr);
+    pg.addColorStop(0,   'rgba(255,255,255,0.28)');
+    pg.addColorStop(0.5, 'rgba(255,255,255,0.12)');
+    pg.addColorStop(1,   'transparent');
+    ctx.fillStyle = pg;
+    ctx.beginPath();
+    ctx.arc(px, py, pr, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // --- Text ---
+  ctx.font = `300 ${c.fontSize}px "Noto Serif SC", serif`;
+  ctx.fillStyle = 'rgba(20, 15, 40, 0.88)';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = 'rgba(255,255,255,0.3)';
+  ctx.shadowBlur = 3;
+
+  // All text on one line (cloud is wide enough)
+  ctx.fillText(c.text, cx, cy + 1);
+
+  ctx.restore();
+}
+
+function drawCloudShape() {} // unused, kept for compat
+
+function wrapText(text, maxChars) {
+  if (maxChars <= 0) maxChars = 1;
+  const lines = [];
+  for (let i = 0; i < text.length; i += maxChars) {
+    lines.push(text.slice(i, i + maxChars));
+  }
+  return lines;
+}
+
+// Allow pressing Enter (not shift+enter) to create
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('poem-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      createCloud();
+    }
+  });
+});
+</script>
+</body>
+</html>
